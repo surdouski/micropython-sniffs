@@ -1,11 +1,11 @@
 # micropython libs
-lib/
+usniffs/lib/
 
 # IDE
 .idea/
 
 # mpbridge ignore file
-mpbridge.ignore
+usniffs/mpbridge.ignore
 
 # main.py is for my development, but has no use in the library or in the repo at this moment
-main.py
+usniffs/main.py
