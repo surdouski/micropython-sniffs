@@ -1,7 +1,7 @@
 import asyncio
 import re
 
-from usniffs_utils import arg_names, re_escape, itertools_product
+from usniffs.utils import arg_names, re_escape, itertools_product
 
 
 LHS_VARIABLE_TOKEN = "<"

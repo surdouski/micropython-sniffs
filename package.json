@@ -1,8 +1,8 @@
 {
   "urls": [
-    ["usniffs.py", "github:surdouski/micropython-sniffs/usniffs/usniffs.py"],
-    ["usniffs_router.py", "github:surdouski/micropython-sniffs/usniffs/usniffs_router.py"],
-    ["usniffs_utils.py", "github:surdouski/micropython-sniffs/usniffs/usniffs_utils.py"]
+    ["usniffs/__init__.py", "github:surdouski/micropython-sniffs/usniffs/__init__.py"],
+    ["usniffs/router.py", "github:surdouski/micropython-sniffs/usniffs/router.py"],
+    ["usniffs/utils.py", "github:surdouski/micropython-sniffs/usniffs/utils.py"]
   ],
   "deps": [
     ["github:peterhinch/micropython-mqtt", "master"]

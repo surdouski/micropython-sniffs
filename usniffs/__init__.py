@@ -1,5 +1,5 @@
 import asyncio
-from usniffs_router import Router
+from usniffs.router import Router
 
 
 class Sniffs:
