@@ -1,6 +1,6 @@
 import struct
-import machine
 import re
+import uctypes
 
 
 async def _async_func():
@@ -15,25 +15,31 @@ def arg_names(fun) -> list:
     """
     if type(fun) != type(_async_func):
         raise Exception("Only bytecode functions handled")
-    addr = struct.unpack("I", struct.pack("O", fun))[0]
-    qstr_table = machine.mem32[machine.mem32[addr + 0x04] + 0x08]
-    bytecode = machine.mem32[addr + 0x0C]
+    ptr = len(struct.pack("O", fun))
+    addr = struct.unpack("P", struct.pack("O", fun))[0]
+    desc = {
+        "context": (uctypes.PTR | (1 * ptr), {"qstr_table": (uctypes.PTR | 2 * ptr, uctypes.UINT16)}),
+        "bytecode": (uctypes.PTR | (3 * ptr), uctypes.UINT8),
+    }
+    fun_bc = uctypes.struct(addr, desc, uctypes.LITTLE_ENDIAN)
+    qstr_table = fun_bc.context[0].qstr_table
+    bytecode = fun_bc.bytecode
 
-    prelude_ptr = bytecode
-    prelude = machine.mem8[prelude_ptr]
+    prelude_ptr = 0
+    prelude = bytecode[prelude_ptr]
     nargs = prelude & 3
     n = 0
     while (prelude & 0x80) != 0:
         prelude_ptr += 1
-        prelude = machine.mem8[prelude_ptr]
+        prelude = bytecode[prelude_ptr]
         nargs |= (prelude & 4) << n
         n = n + 1
 
     prelude_ptr += 1
-    prelude = machine.mem8[prelude_ptr]
+    prelude = bytecode[prelude_ptr]
     while (prelude & 0x80) != 0:
         prelude_ptr += 1
-        prelude = machine.mem8[prelude_ptr]
+        prelude = bytecode[prelude_ptr]
 
     indexes = []
     for i in range(0, 1 + nargs):
@@ -41,13 +47,13 @@ def arg_names(fun) -> list:
         value = 0
         while (prelude & 0x80) != 0:
             prelude_ptr += 1
-            prelude = machine.mem8[prelude_ptr]
+            prelude = bytecode[prelude_ptr]
             value = (value << 7) | (prelude & 0x7F)
         indexes.append(value)
 
     return [
         struct.unpack(
-            "O", struct.pack("I", (machine.mem16[qstr_table + 2 * i] << 3) | 2)
+            "O", struct.pack("P", (qstr_table[i] << 3) | 2)
         )[0]
         for i in indexes
     ][1:]

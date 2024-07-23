@@ -24,7 +24,6 @@ class Router:
             topic_template_string (str): MQTT topic template to match.
             callback (Callable): Handler function to be called when a message is received on the matched topic.
         """
-
         template_arg_names = self._parse_template_arg_names(topic_template_string)
         func_arg_names = arg_names(callback)
 
@@ -41,39 +40,15 @@ class Router:
             )
 
         topic_pattern = self._parse_topic_pattern(topic_template_string)
-        topic_strings = self._generate_subscription_topic_paths(topic_template_string)
-        for topic_string in topic_strings:
-            match = topic_pattern.match(topic_string)
-            if len(template_arg_names) != len(match.groups()):
-                # this should not be possible, if you see this error and are investigating, post an issue
-                raise Exception(
-                    "Number of parsed routing template keys were different than matched groups."
-                )
-
-            _kwargs = {
-                "topic": topic_string,  # known at time of creation
-                "message": "<to-be-updated>",  # will be updated later (if included in func args)
-            }
-
-            # no groupdict support in micropython
-            # template_arg_names items are ordered in the same way that match.groups is
-            for (
-                n,
-                match_value,
-            ) in enumerate(match.groups()):
-                _kwargs[template_arg_names[n]] = match_value
-
-            kwargs = {
-                arg: value for arg, value in _kwargs.items() if arg in func_arg_names
-            }  # only use items that exist in the function signature
-
-            route = {
-                "topic_string": topic_string,  # str
-                "callback": callback,  # Callable[[*list[str]],None]
-                "kwargs": kwargs,  # dict[string,string|None]
-            }
-            self.routes.append(route)
-            print(f"Added new route: {route['topic_string']}: {kwargs}")
+        kwargs = {arg: "<placeholder>" for arg in func_arg_names}
+        route = {
+            "topic_pattern": topic_pattern,  # str
+            "template_arg_names": template_arg_names,
+            "callback": callback,  # Callable[[*list[str]],None]
+            "kwargs": kwargs,  # dict[string,string|None]
+            "unparsed_pattern": topic_template_string,
+        }
+        self.routes.append(route)
 
     async def route(self, topic: str, message: str) -> tuple:
         """
@@ -85,12 +60,21 @@ class Router:
         """
         tasks = []
         for route in self.routes:
-            if route["topic_string"] == topic:
+            _kwargs = {
+                "topic": topic,
+                "message": message,
+            }
+            match = route["topic_pattern"].match(topic)
+            if match:
+                for (
+                    n,
+                    match_value,
+                ) in enumerate(match.groups() or tuple()):
+                    _kwargs[route["template_arg_names"][n]] = match_value
                 func = route["callback"]
                 kwargs = route["kwargs"]
-                # only update message if it exists as True in kwargs
-                if kwargs.get("message"):
-                    kwargs["message"] = message
+                for key in kwargs.keys():
+                    kwargs[key] = _kwargs[key]
                 tasks.append(func(**kwargs))
         results = await asyncio.gather(*tasks)
         return tuple(results) if results else tuple()
@@ -117,6 +101,8 @@ class Router:
                 RHS_VARIABLE_TOKEN
             ):
                 part = f"([^/]+)"
+            elif part == "+":
+                part = "[^/]+"
             pattern_parts.append(part)
         pattern = "/".join(pattern_parts)
         return re.compile(pattern)
@@ -146,7 +132,6 @@ class Router:
     @staticmethod
     def _generate_subscription_topic_paths(topic_pattern: str) -> list[str]:
         generated_subscription_topics = []
-
         parts = topic_pattern.split("/")
         variables = []
         for part in parts:
@@ -167,7 +152,7 @@ class Router:
                     )
                 else:
                     topic_pattern = topic_pattern.replace(part, var_name)
-                    variables.append((var_name, ["+"]))
+                    variables.append((var_name, ["[^/]+"]))
 
         combinations = itertools_product(*[options for _, options in variables])
         for combo in combinations:
@@ -179,4 +164,4 @@ class Router:
         return generated_subscription_topics
 
     def get_topic_paths(self):
-        return [route["topic_string"] for route in self.routes]
+        return [route["unparsed_pattern"] for route in self.routes]

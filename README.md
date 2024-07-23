@@ -63,23 +63,12 @@ config["queue_len"] = 1  # queue_len is required to be 1 or more for this librar
 config["ssl"] = True  # Just an example of another config option you can use, be sure to read mqtt_as docs for details
 
 async def main():
-  try:
-    client = MQTTClient(config)
-    await app.bind(client)  # bind usniffs handling to the mqtt_as client
-    await client.connect()
-    
-    while True:
-      await asyncio.sleep(100)  # needed so that program never terminates
+  client = MQTTClient(config)
+  await app.bind(client)  # bind usniffs handling to the mqtt_as client
+  await client.connect()
   
-  except Exception as e:
-    # This exception handling is optional, however... this pattern helps to ensure you get your debug output over the
-    # serial connection before it closes. 
-    import time
-    import machine
-    import sys
-    sys.print_exception(e)
-    time.sleep(1)
-    machine.reset()
+  while True:
+    await asyncio.sleep(100)  # needed so that program never terminates
 
 try:
   asyncio.run(main())
@@ -156,6 +145,20 @@ The arguments are optional, they do not need to be included in your arguments:
 async def receive_temperature_data(room):
     ...
 ```
+
+
+## Tests
+
+To run tests, do the following.
+```
+# install unittest, mounting the volume locally
+$ docker run --rm -v $(pwd)/lib:/root/.micropython/lib micropython/unix micropython -m mip install unittest
+
+# run the test, using the mounted volume for the unittest deps
+$ docker run --rm -v $(pwd):/code -v $(pwd)/lib:/root/.micropython/lib micropython/unix micropython test.py
+```
+
+If you want to edit tests, you only need to run the last command again to see results.
 
 
 ## Additional
