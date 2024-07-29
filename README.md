@@ -35,9 +35,9 @@ import asyncio
 from mqtt_as import MQTTClient, config
 from usniffs import Sniffs
 
-app = Sniffs()
+sniffs = Sniffs()
 
-@app.route('<some_root_path>/<sub_path_name>:{option_1,option_2}/log')
+@sniffs.route('<some_root_path>/<sub_path_name>:{option_1,option_2}/log')
 async def sensor_001_message(some_root_path, sub_path_name, topic, message):
     print(f"some root path: {some_root_path}")
     print(f"sub path name: {sub_path_name}")
@@ -45,7 +45,7 @@ async def sensor_001_message(some_root_path, sub_path_name, topic, message):
     print(f"message: {message}")
     # Do something else like creating tasks, awaiting functions, etc.
 
-@app.route('<location>:{north,south}/<options>:{option_1,option_2}/etc')
+@sniffs.route('<location>:{north,south}/<options>:{option_1,option_2}/etc')
 async def sensor_001_message(location, message):
     print(f"location: {location}")
     print(f"message: {message}")
@@ -64,16 +64,64 @@ config["ssl"] = True  # Just an example of another config option you can use, be
 
 async def main():
   client = MQTTClient(config)
-  await app.bind(client)  # bind usniffs handling to the mqtt_as client
+  await sniffs.bind(client)  # bind usniffs handling to the mqtt_as client
   await client.connect()
   
   while True:
-    await asyncio.sleep(100)  # needed so that program never terminates
+    await asyncio.sleep(100)  # idle wait to ensure program never terminates
 
-try:
-  asyncio.run(main())
-finally:
-  asyncio.new_event_loop()
+asyncio.run(main())
+```
+
+Additionally, you can await the returns of the decorated functions. This allows for them being used inside coroutines in 
+without any issue or further setup.
+
+In the following example, as messages come in, they are processed inside the route 
+function and then return a new value. As the new values are returned, any coroutines that are currently awaiting them 
+receive that new returned value.
+
+```python
+# imports can be found in previous example
+
+@sniffs.route('+/+')  # +/+ just means it matches on any topic/subtopic pair, such as 'any/pair' or 'foo/bar'
+async def some_relevant_message(message):
+    some_data = mutate_data(message)  # do some conversions/calculations, if needed by your program
+    return int(some_data)  # the return will be the value that is sent to the await
+
+async def some_coroutine():
+  while True:
+    data = await some_relevant_message
+    if data != 42:
+      print('This number is not the meaning of life.')
+
+async def another_coroutine():
+  while True:
+    data = await some_relevant_message
+    if data < 0:
+      print('Negative numbers are scary.')
+          
+async def main():
+  client = MQTTClient(config)  # assumes config is already setup, see previous example
+  await sniffs.bind(client)
+  await sniffs.connect()
+  
+  asyncio.create_task(some_coroutine())
+  asyncio.create_task(another_coroutine())
+  asyncio.sleep(0)  # not technically needed because sleeping below, but we allowing the tasks to begin running here
+
+  while True:
+      await asyncio.sleep(100)  # idle wait to ensure program never terminates
+
+asyncio.run(main())
+```
+
+In the above example, if the messages "43" and -1 were received, in order, the outputput would be
+as follows:
+
+```
+This number is not the meaning of life.  # triggers for 43
+This number is not the meaning of life.  # triggers for -1
+Negative numbers are scary.              # triggers for -1
 ```
 
 ## Documentation
@@ -113,6 +161,14 @@ async def receive_temperature_data(room):
     ...
 ```
 
+Alternatively, you can just use `+`:
+
+```python
+@app.route("+/temperature")
+async def receive_temperature_data(room):
+    ...
+```
+
 You can use any number of named and wildcard placeholders together:
 
 ```python
@@ -120,6 +176,7 @@ You can use any number of named and wildcard placeholders together:
 async def receive_temperature_data(room, sensor, sensor_type):
     ...
 ```
+
 
 ### `topic` and `message`
 
@@ -148,6 +205,8 @@ async def receive_temperature_data(room):
 
 
 ## Tests
+
+**Note: This currently doesn't work, as `re.compile().groups()` does not work across all board compilations. Will be dealt with eventually.**
 
 To run tests, do the following.
 ```

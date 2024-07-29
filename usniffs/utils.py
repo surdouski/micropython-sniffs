@@ -18,7 +18,10 @@ def arg_names(fun) -> list:
     ptr = len(struct.pack("O", fun))
     addr = struct.unpack("P", struct.pack("O", fun))[0]
     desc = {
-        "context": (uctypes.PTR | (1 * ptr), {"qstr_table": (uctypes.PTR | 2 * ptr, uctypes.UINT16)}),
+        "context": (
+            uctypes.PTR | (1 * ptr),
+            {"qstr_table": (uctypes.PTR | 2 * ptr, uctypes.UINT16)},
+        ),
         "bytecode": (uctypes.PTR | (3 * ptr), uctypes.UINT8),
     }
     fun_bc = uctypes.struct(addr, desc, uctypes.LITTLE_ENDIAN)
@@ -52,9 +55,7 @@ def arg_names(fun) -> list:
         indexes.append(value)
 
     return [
-        struct.unpack(
-            "O", struct.pack("P", (qstr_table[i] << 3) | 2)
-        )[0]
+        struct.unpack("O", struct.pack("P", (qstr_table[i] << 3) | 2))[0]
         for i in indexes
     ][1:]
 

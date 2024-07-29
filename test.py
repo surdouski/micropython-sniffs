@@ -5,8 +5,7 @@ look at the repo layout in the future.
 
 import asyncio
 import unittest
-from usniffs import Router, Sniffs
-
+from usniffs import Router, Sniffs, AwaitableReturns
 
 _updated = False
 _update_dict = {}
@@ -40,11 +39,11 @@ class TestRouter(unittest.TestCase):
         global _update_dict
         _updated = False
         _update_dict = {}
-        self.router = Router()
+        self.router = Router(AwaitableReturns())
 
     def test_route_no_replacement(self):
         async def run_test():
-            self.router.add_route("home/+/temperature", _handler)
+            self.router.register("home/+/temperature", _handler)
             await self.router.route("home/truly_anything/temperature", "")
             self.assertTrue(_updated)
 
@@ -52,7 +51,7 @@ class TestRouter(unittest.TestCase):
 
     def test_route_one_replacement(self):
         async def run_test():
-            self.router.add_route("home/<some_replacement>/temperature", _handler)
+            self.router.register("home/<some_replacement>/temperature", _handler)
             await self.router.route("home/truly_anything/temperature", "")
             self.assertTrue(_updated)
 
@@ -60,7 +59,7 @@ class TestRouter(unittest.TestCase):
 
     def test_route_two_replacements(self):
         async def run_test():
-            self.router.add_route("home/<replace_1>/<replace_2>", _handler)
+            self.router.register("home/<replace_1>/<replace_2>", _handler)
             await self.router.route("home/truly_anything/mostly", "")
             self.assertTrue(_updated)
 
@@ -68,7 +67,7 @@ class TestRouter(unittest.TestCase):
 
     def test_route_named_replacement(self):
         async def run_test():
-            self.router.add_route(
+            self.router.register(
                 "home/<room>:{living_room,kitchen}/temperature", _handler
             )
             await self.router.route("home/kitchen/temperature", "")
@@ -78,7 +77,7 @@ class TestRouter(unittest.TestCase):
 
     def test_route_two_named_replacements(self):
         async def run_test():
-            self.router.add_route(
+            self.router.register(
                 "home/<room>:{living_room,kitchen}/<sensor>:{sensor1,sensor2}", _handler
             )
             await self.router.route("home/living_room/sensor2", "")
@@ -88,7 +87,7 @@ class TestRouter(unittest.TestCase):
 
     def test_route(self):
         async def run_test():
-            self.router.add_route(
+            self.router.register(
                 "home/<any_variable>/temperature",
                 _handler__any_variable__topic__message,
             )
@@ -102,7 +101,7 @@ class TestRouter(unittest.TestCase):
 
     def test_route_multiple_groups(self):
         async def run_test():
-            self.router.add_route(
+            self.router.register(
                 "home/<room>:{kitchen,living_room}/<sensor>:{sensor2,temperature}",
                 _handler__topic__message__room__sensor,
             )
@@ -142,6 +141,11 @@ async def _routing_function_two(testing, topic, message):
 async def _routing_wildcard():
     global _sniffs_route_updated
     _sniffs_route_updated = True
+
+
+@sniffs.route("awaitable/function")
+async def _awaitable_function():
+    return "awaitable function return value"
 
 
 class TestSniffs(unittest.TestCase):
@@ -185,6 +189,16 @@ class TestSniffs(unittest.TestCase):
         async def run_test():
             await sniffs.router.route("foo/ta/da", "doesn't matter")
             self.assertTrue(_sniffs_route_updated)
+
+        asyncio.run(run_test())
+
+    def test_awaitable_function(self):
+        async def run_test():
+            asyncio.create_task(
+                sniffs.router.route("home/bar/temperature", "another message")
+            )
+            the_return = await _awaitable_function
+            self.assertEqual(the_return, "awaitable function return value")
 
         asyncio.run(run_test())
 

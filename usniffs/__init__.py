@@ -1,4 +1,6 @@
 import asyncio
+
+from usniffs.returns import AwaitableReturns
 from usniffs.router import Router
 
 
@@ -7,7 +9,8 @@ class Sniffs:
 
     def __init__(self, *args, **kwargs):
         self.client = None
-        self.router = Router()
+        self._awaitable_returns = AwaitableReturns()
+        self.router = Router(self._awaitable_returns)
 
     async def bind(self, client):
         self.client = client
@@ -18,12 +21,14 @@ class Sniffs:
 
         await asyncio.sleep(10)  # maybe this is not a great strategy; revisit this
 
-    def route(self, topic_pattern: str):
-        """inspect_args is a workaround for micropython lacking the ability to inspect function arguments."""
+    def route(self, topic_route: str):
+        """A decorator for adding route registration."""
 
         def decorator(func):
-            self.router.add_route(topic_pattern, func)
-            return func  # Return the original function instead of a wrapper
+            print(f"Adding {topic_route}")
+            route = self._awaitable_returns.add_awaitable_route(topic_route)
+            self.router.register(topic_route, func)
+            return route
 
         return decorator
 

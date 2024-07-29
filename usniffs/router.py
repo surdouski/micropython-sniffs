@@ -1,7 +1,7 @@
-import asyncio
 import re
 
 from usniffs.utils import arg_names, re_escape, itertools_product
+from usniffs.returns import AwaitableReturns
 
 
 LHS_VARIABLE_TOKEN = "<"
@@ -13,18 +13,19 @@ OPTIONS_DELIMITER = ","
 
 
 class Router:
-    def __init__(self):
+    def __init__(self, awaitable_returns: AwaitableReturns):
         self.routes = []
+        self._awaitable_returns = awaitable_returns
 
-    def add_route(self, topic_template_string: str, callback) -> None:
+    def register(self, topic_route: str, callback) -> None:
         """
         Add a route to the router.
 
         Args:
-            topic_template_string (str): MQTT topic template to match.
+            topic_route (str): MQTT topic template to match.
             callback (Callable): Handler function to be called when a message is received on the matched topic.
         """
-        template_arg_names = self._parse_template_arg_names(topic_template_string)
+        route_arg_names = self._parse_route_args(topic_route)
         func_arg_names = arg_names(callback)
 
         _incorrect_args = [
@@ -32,23 +33,23 @@ class Router:
             for arg_name in func_arg_names
             if arg_name != "topic"
             and arg_name != "message"
-            and arg_name not in template_arg_names
+            and arg_name not in route_arg_names
         ]
         if _incorrect_args:
             raise Exception(
                 f"Arguments found in function definition that were not in routing template: {_incorrect_args}"
             )
 
-        topic_pattern = self._parse_topic_pattern(topic_template_string)
+        topic_pattern = self._parse_topic_pattern(topic_route)
         kwargs = {arg: "<placeholder>" for arg in func_arg_names}
-        route = {
+        route_dict = {
             "topic_pattern": topic_pattern,  # str
-            "template_arg_names": template_arg_names,
+            "route_arg_names": route_arg_names,
             "callback": callback,  # Callable[[*list[str]],None]
             "kwargs": kwargs,  # dict[string,string|None]
-            "unparsed_pattern": topic_template_string,
+            "topic_route": topic_route,
         }
-        self.routes.append(route)
+        self.routes.append(route_dict)
 
     async def route(self, topic: str, message: str) -> tuple:
         """
@@ -58,7 +59,7 @@ class Router:
             topic (str): MQTT topic of the received message.
             message (str): Payload of the received message.
         """
-        tasks = []
+        results = []
         for route in self.routes:
             _kwargs = {
                 "topic": topic,
@@ -70,13 +71,16 @@ class Router:
                     n,
                     match_value,
                 ) in enumerate(match.groups() or tuple()):
-                    _kwargs[route["template_arg_names"][n]] = match_value
+                    _kwargs[route["route_arg_names"][n]] = match_value
                 func = route["callback"]
                 kwargs = route["kwargs"]
                 for key in kwargs.keys():
                     kwargs[key] = _kwargs[key]
-                tasks.append(func(**kwargs))
-        results = await asyncio.gather(*tasks)
+                result = await func(**kwargs)
+                self._awaitable_returns.trigger_awaitable_route(
+                    route["topic_route"], result
+                )
+                results.append(result)
         return tuple(results) if results else tuple()
 
     def _parse_topic_pattern(self, topic_pattern: str) -> re.Pattern:
@@ -108,7 +112,7 @@ class Router:
         return re.compile(pattern)
 
     @staticmethod
-    def _parse_template_arg_names(topic_pattern: str) -> list[str]:
+    def _parse_route_args(topic_pattern: str) -> list[str]:
         """
         Parse MQTT topic pattern for variables to send back through kwargs.
 
@@ -164,4 +168,4 @@ class Router:
         return generated_subscription_topics
 
     def get_topic_paths(self):
-        return [route["unparsed_pattern"] for route in self.routes]
+        return [route["topic_route"] for route in self.routes]
