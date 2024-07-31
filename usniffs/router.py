@@ -168,4 +168,7 @@ class Router:
         return generated_subscription_topics
 
     def get_topic_paths(self):
-        return [route["topic_route"] for route in self.routes]
+        topic_paths = []
+        for route in self.routes:
+            topic_paths += self._generate_subscription_topic_paths(route["topic_route"])
+        return topic_paths
