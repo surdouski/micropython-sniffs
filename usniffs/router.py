@@ -66,7 +66,10 @@ class Router:
                 "message": message,
             }
             match = route["topic_pattern"].match(topic)
-            if match:
+            is_same_number_of_subtopics = route["topic_route"].count(
+                "/"
+            ) == topic.count("/")
+            if match and is_same_number_of_subtopics:
                 for (
                     n,
                     match_value,

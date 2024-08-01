@@ -8,12 +8,18 @@ import unittest
 from usniffs import Router, Sniffs, AwaitableReturns
 
 _updated = False
+_updated2 = False
 _update_dict = {}
 
 
 async def _handler():
     global _updated
     _updated = True
+
+
+async def _handler2():
+    global _updated2
+    _updated2 = True
 
 
 async def _handler__any_variable__topic__message(any_variable, topic, message):
@@ -36,8 +42,10 @@ async def _handler__topic__message__room__sensor(topic, message, room, sensor):
 class TestRouter(unittest.TestCase):
     def setUp(self):
         global _updated
+        global _updated2
         global _update_dict
         _updated = False
+        _updated2 = False
         _update_dict = {}
         self.router = Router(AwaitableReturns())
 
@@ -82,6 +90,16 @@ class TestRouter(unittest.TestCase):
             )
             await self.router.route("home/living_room/sensor2", "")
             self.assertTrue(_updated)
+
+        asyncio.run(run_test())
+
+    def test_route_does_not_match_partial_route(self):
+        async def run_test():
+            self.router.register("test/first", _handler)
+            self.router.register("test/first/second", _handler2)
+            await self.router.route("test/first/second", "")
+            self.assertFalse(_updated)
+            self.assertTrue(_updated2)
 
         asyncio.run(run_test())
 
@@ -195,7 +213,7 @@ class TestSniffs(unittest.TestCase):
     def test_awaitable_function(self):
         async def run_test():
             asyncio.create_task(
-                sniffs.router.route("home/bar/temperature", "another message")
+                sniffs.router.route("awaitable/function", "another message")
             )
             the_return = await _awaitable_function
             self.assertEqual(the_return, "awaitable function return value")
