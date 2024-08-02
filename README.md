@@ -220,12 +220,6 @@ $ docker run --rm -v $(pwd):/code -v $(pwd)/lib:/root/.micropython/lib micropyth
 If you want to edit tests, you only need to run the last command again to see results.
 
 
-## Additional
-
-- I have not yet ported the tests over from the python MQTT routing library, [sniffs](https://github.com/surdouski/sniffs).
-  Will be the next thing done.
-
-
 ## Contributing
 
 Contributions are welcome! Please feel free to open issues or submit pull requests.
