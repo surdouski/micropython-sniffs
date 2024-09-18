@@ -6,8 +6,7 @@
     ["usniffs/utils.py", "github:surdouski/micropython-sniffs/usniffs/utils.py"]
   ],
   "deps": [
-    ["github:peterhinch/micropython-mqtt", "master"],
-    ["github:surdouski/micropython-SRBand", "main"]
+    ["github:peterhinch/micropython-mqtt", "master"]
   ],
   "version": "0.3"
 }
