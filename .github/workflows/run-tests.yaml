@@ -27,7 +27,8 @@ jobs:
 
       - name: Install dependencies via MIP
         run: |
-          docker run --rm -v $(pwd)/lib:/root/.micropython/lib micropython-unix-rp2-tests micropython -m mip install package.json
+          deps=$(jq -r '.deps[] | "\(.[0])@\(.[1])"' package.json)
+          echo "$deps" | xargs -n 1 -I {} docker run --rm -v $(pwd)/lib:/root/.micropython/lib micropython-unix-rp2-tests micropython -m mip install {}
 
       - name: Run tests
         run: |
