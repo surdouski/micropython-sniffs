@@ -25,6 +25,10 @@ jobs:
         run: |
           docker run --rm -v $(pwd)/lib:/root/.micropython/lib micropython-unix-rp2-tests micropython -m mip install unittest
 
+      - name: Install dependencies via MIP
+        run: |
+          docker run --rm -v $(pwd)/lib:/root/.micropython/lib micropython-unix-rp2-tests micropython -m mip install package.json
+
       - name: Run tests
         run: |
           docker run --rm -v $(pwd):/code -v $(pwd)/lib:/root/.micropython/lib micropython-unix-rp2-tests micropython test.py
