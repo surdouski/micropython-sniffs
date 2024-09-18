@@ -28,7 +28,6 @@ jobs:
       - name: Check for changes in Dockerfile
         id: check_changes
         run: |
-          git fetch --all
           CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
           echo "Changed files: $CHANGED_FILES"
           if echo "$CHANGED_FILES" | grep -q 'Dockerfile'; then
@@ -39,28 +38,27 @@ jobs:
             echo "dockerfile_changed=false" >> $GITHUB_ENV
           fi
 
-#      - name: Build and push Docker image
-#        if: env.IMAGE_EXISTS != '200' || env.DOCKERFILE_CHANGED == 'true'
-#        uses: docker/build-push-action@v4
-#        with:
-#          context: .
-#          push: true
-#          tags: ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest
-#
-#      - name: Pull existing Docker image
-#        if: env.IMAGE_EXISTS == '200' && env.DOCKERFILE_CHANGED == 'false'
-#        run: |
-#          docker pull ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest
-#
-#      - name: Install unittest via MIP
-#        run: |
-#          docker run --rm -v $(pwd)/lib:/root/.micropython/lib ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest micropython -m mip install unittest
-#
-#      - name: Install dependencies via MIP
-#        run: |
-#          deps=$(jq -r '.deps[] | "\(.[0])@\(.[1])"' package.json)
-#          echo "$deps" | xargs -n 1 -I {} docker run --rm -v $(pwd)/lib:/root/.micropython/lib ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest micropython -m mip install {}
-#
-#      - name: Run tests
-#        run: |
-#          docker run --rm -v $(pwd):/code -v $(pwd)/lib:/root/.micropython/lib ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest micropython test.py
+      - name: Build and push Docker image
+        if: env.DOCKERFILE_CHANGED == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest
+
+      - name: Pull existing Docker image
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest
+
+      - name: Install unittest via MIP
+        run: |
+          docker run --rm -v $(pwd)/lib:/root/.micropython/lib ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest micropython -m mip install unittest
+
+      - name: Install dependencies via MIP
+        run: |
+          deps=$(jq -r '.deps[] | "\(.[0])@\(.[1])"' package.json)
+          echo "$deps" | xargs -n 1 -I {} docker run --rm -v $(pwd)/lib:/root/.micropython/lib ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest micropython -m mip install {}
+
+      - name: Run tests
+        run: |
+          docker run --rm -v $(pwd):/code -v $(pwd)/lib:/root/.micropython/lib ghcr.io/${{ github.repository_owner }}/micropython-unix-rp2-tests:latest micropython test.py
