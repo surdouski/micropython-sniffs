@@ -206,24 +206,23 @@ async def receive_temperature_data(room):
 
 ## Tests
 
-**Note: This currently doesn't work, as `re.compile().groups()` does not work across all board compilations. Will be dealt with eventually.**
+The default micropython/unix docker image does not work, as we require the re.match.groups that exists in the rp2 port.
+The Dockerfile in this repo is built in mostly the same way, except that it passes
+`CFLAGS_EXTRAS=-DMICROPY_PY_RE_MATCH_GROUPS=1` in the `make` command.
 
 To run tests, do the following.
 ```
+# build the dockerfile
+$ docker build -t micropython-unix-rp2-tests . 
+
 # install unittest, mounting the volume locally
-$ docker run --rm -v $(pwd)/lib:/root/.micropython/lib micropython/unix micropython -m mip install unittest
+$ docker run --rm -v $(pwd)/lib:/root/.micropython/lib micropython-unix-rp2-tests micropython -m mip install unittest
 
 # run the test, using the mounted volume for the unittest deps
-$ docker run --rm -v $(pwd):/code -v $(pwd)/lib:/root/.micropython/lib micropython/unix micropython test.py
+$ docker run --rm -v $(pwd):/code -v $(pwd)/lib:/root/.micropython/lib micropython-unix-rp2-tests micropython test.py
 ```
 
 If you want to edit tests, you only need to run the last command again to see results.
-
-
-## Additional
-
-- I have not yet ported the tests over from the python MQTT routing library, [sniffs](https://github.com/surdouski/sniffs).
-  Will be the next thing done.
 
 
 ## Contributing
