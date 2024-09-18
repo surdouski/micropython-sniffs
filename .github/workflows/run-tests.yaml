@@ -32,10 +32,10 @@ jobs:
           echo "Changed files: $CHANGED_FILES"
           if echo "$CHANGED_FILES" | grep -q 'Dockerfile'; then
             echo "Dockerfile has changed"
-            echo "dockerfile_changed=true" >> $GITHUB_ENV
+            echo "DOCKERFILE_CHANGED=true" >> $GITHUB_ENV
           else
             echo "Dockerfile has not changed"
-            echo "dockerfile_changed=false" >> $GITHUB_ENV
+            echo "DOCKERFILE_CHANGED=false" >> $GITHUB_ENV
           fi
 
       - name: Build and push Docker image

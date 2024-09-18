@@ -1,4 +1,3 @@
-# custom micropython build for unix
 FROM ubuntu:latest
 
 RUN apt update && apt install -y gcc-multilib g++-multilib libffi-dev python3 python3-pip python3-setuptools python3-pyelftools git autoconf libtool pkg-config libsqlite3-dev
