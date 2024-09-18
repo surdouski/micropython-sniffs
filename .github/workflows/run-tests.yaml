@@ -23,17 +23,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check if image exists
-        id: check_image
-        run: |
-          IMAGE_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://ghcr.io/v2/${{ github.repository_owner }}/micropython-unix-rp2-tests/manifests/latest")
-          echo "IMAGE_EXISTS=$IMAGE_EXISTS" >> $GITHUB_ENV
-
       - name: Check for changes in Dockerfile
         id: check_changes
         run: |
+          git fetch --all
           CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
           echo "Changed files: $CHANGED_FILES"
           if echo "$CHANGED_FILES" | grep -q 'Dockerfile'; then
