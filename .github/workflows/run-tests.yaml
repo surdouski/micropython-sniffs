@@ -31,14 +31,17 @@ jobs:
             "https://ghcr.io/v2/${{ github.repository_owner }}/micropython-unix-rp2-tests/manifests/latest")
           echo "IMAGE_EXISTS=$IMAGE_EXISTS" >> $GITHUB_ENV
 
-      - name: Check for Dockerfile changes
-        id: check_dockerfile
+      - name: Check for changes in Dockerfile
+        id: check_changes
         run: |
-          git fetch origin main
-          if [ "$(git diff --name-only origin/main...HEAD | grep 'Dockerfile')" ]; then
-            echo "DOCKERFILE_CHANGED=true" >> $GITHUB_ENV
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          echo "Changed files: $CHANGED_FILES"
+          if echo "$CHANGED_FILES" | grep -q 'Dockerfile'; then
+            echo "Dockerfile has changed"
+            echo "dockerfile_changed=true" >> $GITHUB_ENV
           else
-            echo "DOCKERFILE_CHANGED=false" >> $GITHUB_ENV
+            echo "Dockerfile has not changed"
+            echo "dockerfile_changed=false" >> $GITHUB_ENV
           fi
 
 #      - name: Build and push Docker image
