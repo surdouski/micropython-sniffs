@@ -12,13 +12,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Install micropython
         uses: BrianPugh/install-micropython@v2
         with:
-          referenc: v1.23.0
+          reference: v1.23.0
+          cflags: '-DMICROPY_PY_RE_MATCH_GROUPS=1'
 
       - name: Install unittest
         run: |
