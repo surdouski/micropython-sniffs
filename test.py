@@ -221,5 +221,4 @@ class TestSniffs(unittest.TestCase):
         asyncio.run(run_test())
 
 
-if __name__ == "__main__":
-    unittest.main()
+unittest.main()
