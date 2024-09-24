@@ -25,7 +25,6 @@ class Sniffs:
         """A decorator for adding route registration."""
 
         def decorator(func):
-            print(f"Adding {topic_route}")
             route = self._awaitable_returns.add_awaitable_route(topic_route)
             self.router.register(topic_route, func)
             return route
@@ -39,7 +38,6 @@ class Sniffs:
             print("We are connected to broker.")
             paths = self.router.get_topic_paths()
             for path in paths:
-                print(f"Subscribing to {path}")
                 await self.client.subscribe(path)
 
     async def _down(self):

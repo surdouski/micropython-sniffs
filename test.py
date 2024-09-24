@@ -50,48 +50,76 @@ class TestRouter(unittest.TestCase):
         self.router = Router(AwaitableReturns())
 
     def test_route_no_replacement(self):
-        async def run_test():
-            self.router.register("home/+/temperature", _handler)
-            await self.router.route("home/truly_anything/temperature", "")
-            self.assertTrue(_updated)
-
-        asyncio.run(run_test())
+        self.router.register("home/+/temperature", _handler)
+        paths = self.router.get_topic_paths()
+        expected_paths = [
+            "home/+/temperature",
+        ]
+        assert len(paths) == len(expected_paths)
+        for path in paths:
+            assert path in expected_paths, f"{path} not in {expected_paths}"
 
     def test_route_one_replacement(self):
-        async def run_test():
-            self.router.register("home/<some_replacement>/temperature", _handler)
-            await self.router.route("home/truly_anything/temperature", "")
-            self.assertTrue(_updated)
-
-        asyncio.run(run_test())
+        self.router.register("home/<some_replacement>/temperature", _handler)
+        paths = self.router.get_topic_paths()
+        expected_paths = [
+            "home/+/temperature",
+        ]
+        assert len(paths) == len(expected_paths)
+        for path in paths:
+            assert path in expected_paths, f"{path} not in {expected_paths}"
 
     def test_route_two_replacements(self):
-        async def run_test():
-            self.router.register("home/<replace_1>/<replace_2>", _handler)
-            await self.router.route("home/truly_anything/mostly", "")
-            self.assertTrue(_updated)
+        self.router.register("home/<replace_1>/<replace_2>", _handler)
+        paths = self.router.get_topic_paths()
+        expected_paths = [
+            "home/+/+",
+        ]
+        assert len(paths) == len(expected_paths)
+        for path in paths:
+            assert path in expected_paths, f"{path} not in {expected_paths}"
 
-        asyncio.run(run_test())
 
     def test_route_named_replacement(self):
-        async def run_test():
-            self.router.register(
-                "home/<room>:{living_room,kitchen}/temperature", _handler
-            )
-            await self.router.route("home/kitchen/temperature", "")
-            self.assertTrue(_updated)
-
-        asyncio.run(run_test())
+        self.router.register(
+            "home/<room>:{living_room,kitchen}/temperature", _handler
+        )
+        paths = self.router.get_topic_paths()
+        expected_paths = [
+            "home/living_room/temperature",
+            "home/kitchen/temperature",
+        ]
+        assert len(paths) == len(expected_paths)
+        for path in paths:
+            assert path in expected_paths, f"{path} not in {expected_paths}"
 
     def test_route_two_named_replacements(self):
-        async def run_test():
-            self.router.register(
-                "home/<room>:{living_room,kitchen}/<sensor>:{sensor1,sensor2}", _handler
-            )
-            await self.router.route("home/living_room/sensor2", "")
-            self.assertTrue(_updated)
+        self.router.register(
+            "home/<room>:{living_room,kitchen}/<sensor>:{sensor1,sensor2}", _handler
+        )
+        paths = self.router.get_topic_paths()
+        expected_paths = [
+            "home/living_room/sensor1",
+            "home/living_room/sensor2",
+            "home/kitchen/sensor1",
+            "home/kitchen/sensor2",
+        ]
+        assert len(paths) == len(expected_paths)
+        for path in paths:
+            assert path in expected_paths, f"{path} not in {expected_paths}"
 
-        asyncio.run(run_test())
+    def test_route_substring_replacement_part_of_other_topic(self):
+        self.router.register(
+            "devices/<device>:{device1,device2}/anything", _handler
+        )
+        paths = self.router.get_topic_paths()
+        expected_paths = [
+            "devices/device1/anything",
+            "devices/device2/anything"
+        ]
+        assert len(paths) == len(expected_paths)
+        for path in paths:
+            assert path in expected_paths, f"{path} not in {expected_paths}"
 
     def test_route_does_not_match_partial_route(self):
         async def run_test():

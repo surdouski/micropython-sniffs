@@ -4,12 +4,13 @@ from usniffs.utils import arg_names, re_escape, itertools_product
 from usniffs.returns import AwaitableReturns
 
 
-LHS_VARIABLE_TOKEN = "<"
-RHS_VARIABLE_TOKEN = ">"
-VARIABLE_OPTIONS_DELIMITER = ":"
-LHS_OPTIONS_TOKEN = "{"
-RHS_OPTIONS_TOKEN = "}"
-OPTIONS_DELIMITER = ","
+LV_T = "<"  # LHS VARIABLE TOKEN
+RV_T = ">"  # RHS VARIABLE TOKEN
+
+V_D = ":"   # VARIABLE DELIMITER
+LO_T = "{"  # LHS OPTIONS TOKEN
+RO_T = "}"  # RHS OPTIONS TOKEN
+O_D = ","   # OPTIONS DELIMITER
 
 
 class Router:
@@ -98,14 +99,14 @@ class Router:
         """
         pattern_parts = []
         for part in topic_pattern.split("/"):
-            if LHS_OPTIONS_TOKEN in part and RHS_OPTIONS_TOKEN in part:
-                variable_string, options_string = part.split(VARIABLE_OPTIONS_DELIMITER)
+            if LO_T in part and RO_T in part:
+                variable_string, options_string = part.split(V_D)
                 options_string = options_string[1:-1]
-                options = options_string.split(OPTIONS_DELIMITER)
+                options = options_string.split(O_D)
                 options = [option for option in options if option]
                 part = f"({'|'.join(map(re_escape, options))})"
-            elif part.startswith(LHS_VARIABLE_TOKEN) and part.endswith(
-                RHS_VARIABLE_TOKEN
+            elif part.startswith(LV_T) and part.endswith(
+                RV_T
             ):
                 part = f"([^/]+)"
             elif part == "+":
@@ -127,11 +128,11 @@ class Router:
         """
         variables = []
         for part in topic_pattern.split("/"):
-            if LHS_OPTIONS_TOKEN in part and RHS_OPTIONS_TOKEN in part:
-                variable_string, options_string = part.split(VARIABLE_OPTIONS_DELIMITER)
+            if LO_T in part and RO_T in part:
+                variable_string, options_string = part.split(V_D)
                 variables.append(variable_string[1:-1])
-            elif part.startswith(LHS_VARIABLE_TOKEN) and part.endswith(
-                RHS_VARIABLE_TOKEN
+            elif part.startswith(LV_T) and part.endswith(
+                RV_T
             ):
                 variables.append(part[1:-1])
         return variables
@@ -139,34 +140,24 @@ class Router:
     @staticmethod
     def _generate_subscription_topic_paths(topic_pattern: str) -> list[str]:
         generated_subscription_topics = []
-        parts = topic_pattern.split("/")
+        parts = topic_pattern.split("/")  # parts => ["foo", "bar", "<variable>:{option1,option2}", "baz"]
         variables = []
         for part in parts:
-            if LHS_VARIABLE_TOKEN in part and RHS_VARIABLE_TOKEN in part:
-                var_name = part.replace(LHS_VARIABLE_TOKEN, "").replace(
-                    RHS_VARIABLE_TOKEN, ""
-                )
-                var_options = var_name.split(":")
+            if LV_T in part and RV_T in part:
+                var_options = part.split(V_D)   # var_options => ["<variable>", "{option1,option2}"]
                 if len(var_options) > 1:
-                    topic_pattern = topic_pattern.replace(part, var_options[0])
-                    variables.append(
-                        (
-                            var_options[0],
-                            var_options[1]
-                            .strip(f"{LHS_OPTIONS_TOKEN}{RHS_OPTIONS_TOKEN}")
-                            .split(","),
-                        )
-                    )
-                else:
-                    topic_pattern = topic_pattern.replace(part, var_name)
-                    variables.append((var_name, ["[^/]+"]))
+                    parsed_options = var_options[1].strip(LO_T).strip(RO_T).strip(" ").split(O_D)  # parsed_options => "["option1","option2"]"
+                    variables.append((part, parsed_options))
+                elif len(var_options) == 1:  # e.g. ["<variable>"]
+                    var = var_options[0]  # var => "<variable>"
+                    variables.append((var, ["+"]))
 
         combinations = itertools_product(*[options for _, options in variables])
         for combo in combinations:
-            topic = topic_pattern
+            final_pattern = "" + topic_pattern
             for (var_name, _), val in zip(variables, combo):
-                topic = topic.replace(f"{var_name}", val)
-            generated_subscription_topics.append(topic)
+                final_pattern = final_pattern.replace(f"{var_name}", f"{val}")
+            generated_subscription_topics.append(final_pattern)
 
         return generated_subscription_topics
 
