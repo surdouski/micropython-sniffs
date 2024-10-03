@@ -195,6 +195,9 @@ async def _awaitable_function():
 
 
 class TestSniffs(unittest.TestCase):
+    on_connect_called = False
+    on_disconnect_called = False
+
     def setUp(self):
         global _topic
         global _message
@@ -247,6 +250,38 @@ class TestSniffs(unittest.TestCase):
             self.assertEqual(the_return, "awaitable function return value")
 
         asyncio.run(run_test())
+
+    def _on_connect(self):
+        self.on_connect_called = True
+
+    def _on_disconnect(self):
+        self.on_connect_called = True
+
+    # In order to properly test on_connect and on_disconnect, I would need to rewire up
+    # the integration testing. Not an immediate priority, but I'll put it on the list of
+    # things to do.
+    #
+    # def test_on_connect(self):
+    #     client = sniffs.client  # reuse this client
+    #     try:
+    #         client.disconnect()  # make sure disconnected
+    #     except:
+    #         pass
+    #     new_sniffs = Sniffs(on_connect=self._on_connect)
+    #     new_sniffs.bind(client)
+    #     client.connect()
+    #     assert self.on_connect_called is True
+    #
+    # def test_on_disconnect(self):
+    #     client = sniffs.client  # reuse this client
+    #     try:
+    #         client.connect()  # make sure connected
+    #     except:
+    #         pass
+    #     new_sniffs = Sniffs(on_disconnect=self._on_disconnect)
+    #     new_sniffs.bind(client)
+    #     client.disconnect()
+    #     assert self.on_disconnect_called is True
 
 
 unittest.main()
