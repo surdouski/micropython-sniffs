@@ -45,8 +45,8 @@ def arg_names(fun) -> list:
         bound_meth = uctypes.struct(addr, desc, uctypes.NATIVE)
         return arg_names(struct.unpack("O", struct.pack("P", bound_meth.meth))[0])[1:]
 
-    if not is_sync_function and not is_async_function and not is_bound_method:
-        raise Exception("Only bytecode functions and bound methods are handled.")
+    if not is_sync_function and not is_async_function:
+        raise Exception("Only bytecode functions are handled.")
     desc = {
         "context": (uctypes.PTR | (1 * ptr), {"qstr_table": (uctypes.PTR | 2 * ptr, uctypes.UINT16)}),
         "bytecode": (uctypes.PTR | (3 * ptr), uctypes.UINT8),
