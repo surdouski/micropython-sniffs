@@ -30,23 +30,17 @@ def arg_names(fun) -> list:
     is_bound_method = type(fun) == type(_FooClass().bound_method)
     is_closure = type(fun) == type(closure)
     if is_closure:
-        if sys.platform == "linux":
-            desc = {
-                "fun": (uctypes.UINT64 | (1 * ptr)),
-                "n_closed": (uctypes.UINT32 | (2 * ptr))
-            }
-        else:  # Assume rp2 for now, might need to update in the future.
-            desc = {
-                "fun": (uctypes.UINT32 | (1 * ptr)),
-                "n_closed": (uctypes.UINT32 | (2 * ptr))
-            }
+        desc = {
+            "fun": (uctypes.UINT32 if ptr == 4 else uctypes.UINT64 | (1 * ptr)),
+            "n_closed": (uctypes.UINT32 | (2 * ptr))
+        }
 
         fun_closure = uctypes.struct(addr, desc, uctypes.NATIVE)
         return arg_names(struct.unpack("O", struct.pack("P", fun_closure.fun))[0])[fun_closure.n_closed:]
 
     if is_bound_method:
         desc = {
-            "meth": (uctypes.UINT64 | (1 * ptr))
+            "meth": (uctypes.UINT32 if ptr == 4 else uctypes.UINT64 | (1 * ptr))
         }
         bound_meth = uctypes.struct(addr, desc, uctypes.NATIVE)
         return arg_names(struct.unpack("O", struct.pack("P", bound_meth.meth))[0])[1:]
