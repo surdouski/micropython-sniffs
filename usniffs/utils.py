@@ -22,6 +22,7 @@ def arg_names(fun) -> list:
     to extract the function arguments. Written by @felixdoerre1 in the micropython discord.
     """
     ptr = len(struct.pack("O", fun))
+    ptr_type = uctypes.UINT32 if ptr == 4 else uctypes.UINT64
     addr = struct.unpack("P", struct.pack("O", fun))[0]
     def closure(x):
         nonlocal fun
@@ -31,7 +32,7 @@ def arg_names(fun) -> list:
     is_closure = type(fun) == type(closure)
     if is_closure:
         desc = {
-            "fun": (uctypes.UINT32 if ptr == 4 else uctypes.UINT64 | (1 * ptr)),
+            "fun": (ptr_type | (1 * ptr)),
             "n_closed": (uctypes.UINT32 | (2 * ptr))
         }
 
@@ -40,7 +41,7 @@ def arg_names(fun) -> list:
 
     if is_bound_method:
         desc = {
-            "meth": (uctypes.UINT32 if ptr == 4 else uctypes.UINT64 | (1 * ptr))
+            "meth": (ptr_type | (1 * ptr))
         }
         bound_meth = uctypes.struct(addr, desc, uctypes.NATIVE)
         return arg_names(struct.unpack("O", struct.pack("P", bound_meth.meth))[0])[1:]
