@@ -6,10 +6,24 @@ look at the repo layout in the future.
 import asyncio
 import unittest
 from usniffs import Router, Sniffs, AwaitableReturns
+from usniffs.utils import arg_names
 
 _updated = False
 _updated2 = False
 _update_dict = {}
+
+
+def sync_foo(a, b, c, d, e, f):
+    ...
+
+async def async_foo(a, b, c, d, e, f):
+    ...
+
+class BarClass:
+    def bound_foo(self, a, b, c, d, e, f):
+        ...
+
+bound_foo = BarClass().bound_foo
 
 
 async def _handler():
@@ -256,6 +270,22 @@ class TestSniffs(unittest.TestCase):
 
     def _on_disconnect(self):
         self.on_connect_called = True
+
+    def test_arg_names_on_sync_function(self):
+        assert arg_names(sync_foo) == ["a", "b", "c", "d", "e", "f"]
+
+    def test_arg_names_on_async_function(self):
+        assert arg_names(async_foo) == ["a", "b", "c", "d", "e", "f"]
+
+    def test_arg_names_on_bound_function(self):
+        assert arg_names(bound_foo) == ["a", "b", "c", "d", "e", "f"]
+
+    def test_arg_names_on_closure(self):
+        bar = 0
+        def closure(a, b, c, d, e, f):
+            nonlocal bar
+
+        assert arg_names(closure) == ["a", "b", "c", "d", "e", "f"]
 
     # In order to properly test on_connect and on_disconnect, I would need to rewire up
     # the integration testing. Not an immediate priority, but I'll put it on the list of
