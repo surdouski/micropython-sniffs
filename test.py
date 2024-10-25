@@ -272,20 +272,20 @@ class TestSniffs(unittest.TestCase):
         self.on_connect_called = True
 
     def test_arg_names_on_sync_function(self):
-        assert arg_names(sync_foo) == ["a", "b", "c", "d", "e", "f"]
+        assert arg_names(sync_foo) == ["a", "b", "c", "d", "e", "f"], f"Expected ['a', 'b', 'c', 'd', 'e', 'f'], but got {arg_names(sync_foo)}"
 
     def test_arg_names_on_async_function(self):
-        assert arg_names(async_foo) == ["a", "b", "c", "d", "e", "f"]
+        assert arg_names(async_foo) == ["a", "b", "c", "d", "e", "f"], f"Expected ['a', 'b', 'c', 'd', 'e', 'f'], but got {arg_names(async_foo)}"
 
     def test_arg_names_on_bound_function(self):
-        assert arg_names(bound_foo) == ["a", "b", "c", "d", "e", "f"]
+        assert arg_names(bound_foo) == ["a", "b", "c", "d", "e", "f"], f"Expected ['a', 'b', 'c', 'd', 'e', 'f'], but got {arg_names(bound_foo)}"
 
     def test_arg_names_on_closure(self):
         bar = 0
         def closure(a, b, c, d, e, f):
             nonlocal bar
 
-        assert arg_names(closure) == ["a", "b", "c", "d", "e", "f"]
+        assert arg_names(closure) == ["a", "b", "c", "d", "e", "f"], f"Expected ['a', 'b', 'c', 'd', 'e', 'f'], but got {arg_names(closure)}"
 
     # In order to properly test on_connect and on_disconnect, I would need to rewire up
     # the integration testing. Not an immediate priority, but I'll put it on the list of

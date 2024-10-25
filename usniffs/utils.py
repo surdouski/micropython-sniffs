@@ -44,6 +44,13 @@ def arg_names(fun) -> list:
         fun_closure = uctypes.struct(addr, desc, uctypes.NATIVE)
         return arg_names(struct.unpack("O", struct.pack("P", fun_closure.fun))[0])[fun_closure.n_closed:]
 
+    if is_bound_method:
+        desc = {
+            "meth": (uctypes.UINT64 | (1 * ptr))
+        }
+        bound_meth = uctypes.struct(addr, desc, uctypes.NATIVE)
+        return arg_names(struct.unpack("O", struct.pack("P", bound_meth.meth))[0])[1:]
+
     if not is_sync_function and not is_async_function and not is_bound_method:
         raise Exception("Only bytecode functions and bound methods are handled.")
     desc = {
@@ -67,7 +74,6 @@ def arg_names(fun) -> list:
     prelude_ptr += 1
     prelude = bytecode[prelude_ptr]
     while (prelude & 0x80) != 0:
-        print(".")
         prelude_ptr += 1
         prelude = bytecode[prelude_ptr]
 
