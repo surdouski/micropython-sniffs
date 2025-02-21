@@ -8,5 +8,5 @@
   "deps": [
     ["github:peterhinch/micropython-mqtt", "master"]
   ],
-  "version": "0.5"
+  "version": "0.6"
 }
