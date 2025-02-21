@@ -92,6 +92,26 @@ def re_escape(pattern):
     # Replacement minimal re.escape for ure compatibility
     return re.sub(r"([\^\$\.\|\?\*\+\(\)\[\\])", r"\\\1", pattern)
 
+def match_groups(match: re.match) -> tuple[str]:
+    """Micropython match.groups functionality is not guaranteed on all ports. So lets do it ourselves."""
+    if not match:
+        return ()
+    
+    try:
+        match.group(1)  # there are no capture groups
+    except IndexError:
+        return ()
+    
+    groups = []
+    try:
+        index = 1
+        while True:
+            groups.append(match.group(index))
+            index += 1
+    except IndexError:
+        return tuple(groups)
+        
+
 
 def itertools_product(*args, repeat=1):
     """

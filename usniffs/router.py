@@ -1,6 +1,6 @@
 import re
 
-from usniffs.utils import arg_names, re_escape, itertools_product
+from usniffs.utils import arg_names, re_escape, itertools_product, match_groups
 from usniffs.returns import AwaitableReturns
 
 
@@ -74,7 +74,7 @@ class Router:
                 for (
                     n,
                     match_value,
-                ) in enumerate(match.groups() or tuple()):
+                ) in enumerate(match_groups(match)):
                     _kwargs[route["route_arg_names"][n]] = match_value
                 func = route["callback"]
                 kwargs = route["kwargs"]
